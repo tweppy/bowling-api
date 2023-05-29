@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 8000;
-const connectToDb = require('./model/db');
+const connectToDb = require('./models/db');
 
 // routers
 const bookingRouter = require("./routes/bookingRouter");
@@ -13,7 +13,7 @@ app.use("/api/booking", bookingRouter)
 
 app.listen(PORT, () => {
   console.log("Server started");
-  connectToDb(); //run here i guess
+  connectToDb();
 });
 
 // try {
