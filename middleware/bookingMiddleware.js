@@ -1,51 +1,61 @@
-const { checkAvailabilty } = require("../models/booking");
-
-// check available booking slot
-async function checkBooking(req, res, next) {
-  const { date, time, laneId } = req.body;
-  const booked = await checkAvailabilty(date, time, laneId);
-
-  // if not booked, add
-  if (!booked) {
-    next();
-  } else {
-    res.json({
-      success: false,
-      message: "Unavailable booking slot",
-    });
-  }
-}
+const { checkAvailabilty, limitLanes } = require("../models/booking");
+const moment = require("moment");
 
 // date and time format CHECK
-async function checkFormats(req, res, next) {
+async function checkDateFormat(req, res, next) {
   const { date, time } = req.body;
 
-  console.log(date.length, time.length)
+  const parsedDate = moment(date, "YYYY-MM-DD", true);
+  const parsedTime = moment(time, "HH:mm", true);
 
-  // check moment.js
+  const validDate =
+    parsedDate.isValid() && parsedDate.format("YYYY-MM-DD") === date;
+  const validTime = parsedTime.isValid() && parsedTime.format("HH:mm") === time;
 
-  if (date && time) {
+  if (validDate && validTime) {
     next();
   } else {
     res.json({
       success: false,
-      message: "Invalid time format. Please use 'DD/MM/YYYY' and 'TT:00' formats. Example: 05/08/2023 and 09:00.",
+      message:
+        "Invalid time format. Please use 'YYYY-MM-DD' and 'HH:MM' formats. You can only book during full hour slots. Example: 2023-08-26 and 09:00.",
     });
   }
 }
 
-async function checkBody(req, res, next) {
-    // req.body:
-    const { players, laneId, shoeSizes } = req.body;
+async function checkPlayerAndShoes(req, res, next) {
+  const { players, shoeSizes } = req.body;
 
-    //haven't created these fns yet OOop
-    // how to when boooking multiple lanes tho?
-    const validLaneNumber = await validLane(laneId) // 1-8, match ids in db
+  const validPlayersAndShoes = shoeSizes.length === players;
 
-    const validPlayersAndShoes = shoeSizes.length === players
-
-
-    // laneIdArray.length * 6 (for max 6 people per lane)
+  if (validPlayersAndShoes) {
+    next();
+  } else {
+    res.json({
+      msg: "Invalid input. Please make sure each player has a shoe size.",
+    });
+  }
 }
 
-module.exports = { checkBooking, checkFormats };
+async function checkLaneLimit(req, res, next) {
+  const { date, time, laneNum } = req.body;
+  const howMany = await limitLanes(date, time);
+  const calcRemainingLanes = 8 - howMany.length;
+
+  // user writes more htan 8 lanes
+  if (laneNum > 8) {
+    res.json({ msg: "You can't book more than 8 lanes." });
+  }
+  // what is booked + laneNUm EXCEEDS 8
+  else if (howMany.length + laneNum > 8) {
+    res.json({
+      msg: "Not enough lanes available for this time slot.",
+      lanesBooked: howMany.length,
+      lanesAvailable: calcRemainingLanes,
+    });
+  } else {
+    next(); // what is booked + laneNum does not exceed 8
+  }
+}
+
+module.exports = { checkDateFormat, checkPlayerAndShoes, checkLaneLimit };
