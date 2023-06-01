@@ -54,7 +54,6 @@ async function getLaneNum(bookingId) {
 }
 
 // POST
-
 async function assignLanes(date, time, laneNum, bookingId, email, players, shoeSizes) {
   const query = `SELECT * FROM lanes WHERE date = ? AND time = ?`;
   let bookedLanes = [];
@@ -67,7 +66,7 @@ async function assignLanes(date, time, laneNum, bookingId, email, players, shoeS
     } else {
       rows.forEach((row) => {
         bookedLanes = [...bookedLanes, row.laneId];
-        console.log("unavailable lanes:", bookedLanes);
+        console.log("Unavailable lanes:", bookedLanes);
       });
 
       for (let i = 1; i <= totalLanes; i++) {
@@ -79,7 +78,7 @@ async function assignLanes(date, time, laneNum, bookingId, email, players, shoeS
         }
       }
 
-      console.log("assigned lanes:", assignedLanes);
+      console.log("Assigned lanes:", assignedLanes);
       const lanesStr = assignedLanes.join(", ");
 
       insertLanes(assignedLanes, date, time, bookingId);

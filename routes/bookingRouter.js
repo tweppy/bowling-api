@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const { assignLanes, getBooking, deleteBooking, getAllBookings, deleteBookingFromLanes, getAllBookedLanes, editBooking, getLaneNum, limitLanes } = require("../models/booking");
 const { checkDateFormat, checkPlayerAndShoes, calcPrice } = require("../middleware/bookingMiddleware");
 
+// GET all bookings from bookings table
 router.get("/allBookings", async (req, res) => {
   try {
     const allBookings = await getAllBookings();
@@ -17,6 +18,7 @@ router.get("/allBookings", async (req, res) => {
   }
 });
 
+// GET all booked lanes from lanes table
 router.get("/bookedLanes", async (req, res) => {
   try {
     const allBookedLanes = await getAllBookedLanes();
@@ -33,6 +35,7 @@ router.get("/bookedLanes", async (req, res) => {
   }
 });
 
+// GET specific booking by bookingId
 router.get("/", async (req, res) => {
   const { bookingId } = req.body;
   const booking = await getBooking(bookingId);
@@ -45,6 +48,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// POST new booking
 router.post("/", checkDateFormat, checkPlayerAndShoes, async (req, res) => {
   const { email, date, time, players, laneNum, shoeSizes } = req.body;
   const bookingId = uuidv4();
@@ -54,23 +58,23 @@ router.post("/", checkDateFormat, checkPlayerAndShoes, async (req, res) => {
 
   try {
     if (laneNum > 8) {
-      res.json({ msg: "You can't book more than 8 lanes." });
+      res.json({ result: "You can't book more than 8 lanes." });
     } else if (booked.length + laneNum > 8) {
       res.json({
-        msg: "Not enough lanes available for this time slot.",
+        result: "Not enough lanes available for this time slot.",
         lanesBooked: booked.length,
         lanesAvailable: calcRemainingLanes,
       });
     } else {
       assignLanes(date, time, laneNum, bookingId, email, players, shoeSizes);
-      res.json({ msg: "Booking successful.", bookingId: bookingId });
+      res.json({ result: "Booking successful.", bookingId: bookingId });
     }
   } catch (error) {
-    res.json({ msg: "Booking failed." });
+    res.json({ result: "Booking failed." });
   }
 });
 
-// partial edit
+// EDIT booking, only players and shoe sizes
 router.put("/edit", checkPlayerAndShoes, async (req, res) => {
   const { bookingId, players, shoeSizes } = req.body;
   const booking = await getBooking(bookingId);
@@ -83,25 +87,22 @@ router.put("/edit", checkPlayerAndShoes, async (req, res) => {
 
     editBooking(bookingId, players, shoeSizes, lanes, totalCost);
 
-    res.json({ msg: "Booking edited for players and shoe sizes." });
+    res.json({ result: "Booking edited for players and shoe sizes." });
   } else {
-    res.json({ msg: "Editing booking failed." });
+    res.json({ result: "Editing booking failed." });
   }
 });
 
-// full edit
+// EDIT full booking
 router.put("/edit-full", checkDateFormat, checkPlayerAndShoes, async (req, res) => {
   const { bookingId, email, date, time, laneNum, players, shoeSizes } = req.body;
   const savedBookingId = req.body.bookingId;
   const booking = await getBooking(bookingId);
-
   const booked = await limitLanes(date, time);
-  const calcRemainingLanes = 8 - booked.length;
 
   // calc new lanes remaining by - current laneNum in booking to allow for adding more lanes than before without going over 8 lanes total limit
   const calcNew = booked.length - booking.laneNum;
   const calcNew2 = calcNew + laneNum <= 8;
-  console.log("omg", calcNew, calcNew2);
 
   if (!booking) {
     res.json({ result: "Invalid booking ID." });
@@ -116,7 +117,7 @@ router.put("/edit-full", checkDateFormat, checkPlayerAndShoes, async (req, res) 
       res.json({ result: "Booking edited successfully!" });
     }
   } else {
-    res.json({ result: "Failed to edit booking.", lanesBooked: calcNew, lanesAvailable: 8 - calcNew });
+    res.json({ result: "Failed to edit booking." });
   }
 });
 

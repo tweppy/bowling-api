@@ -28,7 +28,7 @@ async function checkPlayerAndShoes(req, res, next) {
     next();
   } else {
     res.json({
-      msg: "Invalid input. Please make sure each player has a shoe size.",
+      result: "Invalid input. Please make sure each player has a shoe size.",
     });
     console.log(players, shoeSizes.length);
   }
