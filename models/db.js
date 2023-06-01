@@ -32,10 +32,7 @@ function createTable(db) {
       bookingId TEXT,
       FOREIGN KEY (bookingId) REFERENCES bookings(bookingId)
     );
-
-
   `);
 }
-
 
 module.exports = createDbConnection;
